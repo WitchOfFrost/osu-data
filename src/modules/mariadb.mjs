@@ -11,7 +11,20 @@ const pool = mariadb.createPool({
     connectionLimit: config.mariadb.maxConnections
 });
 
+let permanentConn;
+
+export async function createPermanentConnection() {
+    permanentConn = await pool.getConnection().catch(err => console.log(err));
+}
+
 export class mariadbWorker {
+    static runSqlQueryPermanentConnection(query, args) {
+        return new Promise(async (resolve) => {
+            let response = await permanentConn.query(`${query}`, args);
+            resolve(response);
+        });
+    }
+
     static runSqlQuery(query, args) {
         let conn;
 
@@ -19,6 +32,7 @@ export class mariadbWorker {
             conn = await pool.getConnection().catch(err => console.log(err));
             let response = await conn.query(`${query}`, args);
             resolve(response)
+            if (conn) return conn.end();
         });
     }
 
@@ -30,6 +44,7 @@ export class mariadbWorker {
             let data = await conn.query(`CREATE TABLE IF NOT EXISTS ${table} ${query}`)
             console.log(data);
             resolve(data);
+            if (conn) return conn.end();
         });
     }
 
@@ -56,6 +71,7 @@ export class mariadbWorker {
             conn = await pool.getConnection().catch(err => console.log(err));
             await conn.query(`CREATE TABLE IF NOT EXISTS ${table} (${query})`)
             resolve(true)
+            if (conn) return conn.end();
         });
     }
 }
