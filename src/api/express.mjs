@@ -65,7 +65,7 @@ export async function apiMain() {
         await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE rank=? LIMIT 1`, [req.path.split("/").pop()]).then(data => {
             if (data[0] == undefined) {
                 res.status(200);
-                res.json([{ rank: null, user_id: 0, username: null, score: null }])
+                res.json([{ rank: 0, user_id: 0, username: 0, score: 0 }])
             } else {
                 res.status(200);
                 res.json([data[0]]);
@@ -88,7 +88,7 @@ export async function apiMain() {
         await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE ${req.query.s}=? LIMIT 1`, [req.path.split("/").pop()]).then(data => {
             if (data[0] == undefined) {
                 res.status(200);
-                res.json([{ rank: null, user_id: 0, username: null, score: null }])
+                res.json([{ rank: 0, user_id: 0, username: 0, score: 0 }])
             } else {
                 res.status(200);
                 res.json([data[0]]);
