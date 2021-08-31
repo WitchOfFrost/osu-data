@@ -160,11 +160,9 @@ export async function apiMain() {
             file.mv(`./api/cache/${fileName}.${fileExt}`);
 
             mariadbWorker.runSqlQuery(`LOAD DATA LOCAL INFILE '${path}' INTO TABLE scores FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' IGNORE 1 ROWS`).then(data => {
-                console.log("Probably successful.");
+                res.status(200);
+                res.json({ message: "Successfully uploaded.", data: data });
             });
-
-            res.status(200);
-            res.json({ message: "Successfully uploaded." });
         };
     });
 };
