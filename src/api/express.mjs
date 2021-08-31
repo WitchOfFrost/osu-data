@@ -7,7 +7,10 @@ import { mariadbWorker } from "../modules/mariadb.mjs";
 const api = express();
 
 export async function apiMain() {
-    api.use(morgan(config.api.logging));
+
+    if (["tiny", "dev"].includes(config.api.logging) > -1) {
+        api.use(morgan(config.api.logging));
+    }
 
     api.listen(config.api.port, () => {
         console.log("Api running on port " + config.api.port);
