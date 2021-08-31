@@ -48,6 +48,24 @@ export async function apiMain() {
         console.log("Api running on port " + config.api.port);
     });
 
+    api.get('/rank/*', async (req, res) => {
+        req.query.mode = await parseMode(req.query.mode, req.query.m);
+
+        if (["score", "charts", "country", "performance"].includes(req.query.type) == -1 || req.query.type == undefined) {
+            req.query.type = "score"
+        };
+
+        await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE rank=? LIMIT 1`, [req.url.split("/").pop()]).then(data => {
+            if (data[0] == undefined) {
+                res.status(200);
+                res.json([{ rank: null, user_id: 0, username: null, score: null }])
+            } else {
+                res.status(200);
+                res.json([data[0]]);
+            }
+        });
+    })
+
     api.get('/u/*', async (req, res) => {
 
         req.query.mode = await parseMode(req.query.mode, req.query.m);
