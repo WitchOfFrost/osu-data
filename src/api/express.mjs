@@ -17,13 +17,19 @@ export async function apiMain() {
     });
 
     api.get('/u/*', async (req, res) => {
-        req.query.type = "score";
-        req.query.mode = "osu";
+
+        if (["osu", "mania", "taiko", "fruits"].includes(req.query.mode) == -1 || req.query.mode == undefined) {
+            req.query.mode = "osu"
+        };
+
+        if (["score", "charts", "country", "performance"].includes(req.query.type) == -1 || req.query.type == undefined) {
+            req.query.type = "score"
+        };
 
         await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE user_id=? LIMIT 1`, [req.url.split("/").pop()]).then(data => {
             if (data[0] == undefined) {
                 res.status(200);
-                res.json([{ rank: "No Score Rank", user_id: null, username: null, score: null }])
+                res.json([{ rank: null, user_id: 0, username: null, score: null }])
             } else {
                 res.status(200);
                 res.json([data[0]]);
