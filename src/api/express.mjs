@@ -8,7 +8,7 @@ const api = express();
 
 export async function apiMain() {
 
-    if (["tiny", "dev"].includes(config.api.logging) > -1) {
+    if (["tiny", "dev"].indexOf(config.api.logging) > -1) {
         api.use(morgan(config.api.logging));
     }
 
