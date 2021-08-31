@@ -21,8 +21,13 @@ export async function apiMain() {
         req.query.mode = "osu";
 
         await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE user_id=? LIMIT 1`, [req.url.split("/").pop()]).then(data => {
-            res.status(200);
-            res.json(data[0]);
+            if (data[0] == undefined) {
+                res.status(200);
+                res.json([{ rank: 0, user_id: 0, username: "null", score: 0 }])
+            } else {
+                res.status(200);
+                res.json([data[0]]);
+            }
         });
     });
 
