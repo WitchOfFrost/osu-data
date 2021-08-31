@@ -49,10 +49,12 @@ export async function osuMain() {
 
     if (config.settings.autoUpdate === true) {
         let pass = -1;
+
         async function aU() {
             pass++
 
             switch (pass) {
+                default:
                 case 0:
                     if (config.settings.enabledFetches.indexOf("osuScore") > -1) {
                         await mariadbWorker.runSqlCreateTable('scoreranking_osu', '`rank` INT(11) NOT NULL, `user_id` INT NULL DEFAULT NULL, `username` VARCHAR(255) NULL DEFAULT NULL, `score` BIGINT(20) NOT NULL DEFAULT 0, PRIMARY KEY(`rank`)')

@@ -122,6 +122,11 @@ export async function apiMain() {
         });
     });
 
+    api.get('/osuprofile/version', async (req, res) => {
+        res.status(200);
+        res.json({ version: config.api.osuprofileVersion })
+    });
+
     api.post('/import', async (req, res) => {
         let sentToken = req.headers["x-access-token"] || req.headers["authorization"];
 
