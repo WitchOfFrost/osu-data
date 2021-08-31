@@ -13,6 +13,16 @@ export async function apiMain() {
         console.log("Api running on port " + config.api.port);
     });
 
+    api.get('/u/*', async (req, res) => {
+        req.query.type = "score";
+        req.query.mode = "osu";
+
+        await mariadbWorker.runSqlQuery(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE user_id=? LIMIT 1`, [req.url.split("/").pop()]).then(data => {
+            res.status(200);
+            res.json(data[0]);
+        });
+    });
+
     api.get('/rankings', async (req, res) => {
 
         if (["osu", "mania", "taiko", "fruits"].includes(req.query.mode) == -1 || req.query.mode == undefined) {

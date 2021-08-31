@@ -12,12 +12,12 @@ const pool = mariadb.createPool({
 });
 
 export class mariadbWorker {
-    static runSqlQuery(query) {
+    static runSqlQuery(query, args) {
         let conn;
 
         return new Promise(async (resolve) => {
             conn = await pool.getConnection().catch(err => console.log(err));
-            let response = await conn.query(`${query}`);
+            let response = await conn.query(`${query}`, args);
             resolve(response)
         });
     }
