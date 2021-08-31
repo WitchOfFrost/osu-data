@@ -1,0 +1,25 @@
+{
+    "osu": {
+        "id": "your osu client id (int)",
+        "secret": "your osu client secret"
+    },
+    "api": {
+        "port": "your api port (int)"
+    },
+    "mariadb": {
+        "host": "your mariadb ip",
+        "user": "your mariadb user",
+        "password": "your mariadb password",
+        "name": "your mariadb database"
+    },
+    "settings": {
+        "autoUpdate": "auto update scores? (bool)",
+        "updateInterval": "update interval (minutes/int)",
+        "enabledFetches": [
+            "osuScore",
+            "fruitsScore",
+            "maniaScore",
+            "taikoScore"
+        ]
+    }
+}
