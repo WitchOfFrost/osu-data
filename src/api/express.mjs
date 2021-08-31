@@ -23,7 +23,7 @@ export async function apiMain() {
         await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE user_id=? LIMIT 1`, [req.url.split("/").pop()]).then(data => {
             if (data[0] == undefined) {
                 res.status(200);
-                res.json([{ rank: 0, user_id: 0, username: "null", score: 0 }])
+                res.json([{ rank: "No Score Rank", user_id: null, username: null, score: null }])
             } else {
                 res.status(200);
                 res.json([data[0]]);
