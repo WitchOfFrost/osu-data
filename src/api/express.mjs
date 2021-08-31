@@ -6,6 +6,38 @@ import { mariadbWorker } from "../modules/mariadb.mjs";
 
 const api = express();
 
+function parseMode(mode, m) {
+    let resolveMode = "";
+
+    if (m == undefined) {
+        if (["osu", "mania", "taiko", "fruits"].includes(mode) == -1 || mode == undefined) {
+            resolveMode = "osu";
+        } else {
+            resolveMode = mode;
+        };
+    } else {
+        switch (m) {
+            case "0":
+                resolveMode = "osu";
+                break;
+            case "1":
+                resolveMode = "taiko";
+                break;
+            case "2":
+                resolveMode = "fruits";
+                break;
+            case "3":
+                resolveMode = "mania";
+                break;
+            default:
+                resolveMode = "osu";
+                break;
+
+        }
+    };
+    return resolveMode;
+};
+
 export async function apiMain() {
 
     if (["tiny", "dev"].indexOf(config.api.logging) > -1) {
@@ -18,9 +50,7 @@ export async function apiMain() {
 
     api.get('/u/*', async (req, res) => {
 
-        if (["osu", "mania", "taiko", "fruits"].includes(req.query.mode) == -1 || req.query.mode == undefined) {
-            req.query.mode = "osu"
-        };
+        req.query.mode = await parseMode(req.query.mode, req.query.m);
 
         if (["score", "charts", "country", "performance"].includes(req.query.type) == -1 || req.query.type == undefined) {
             req.query.type = "score"
@@ -39,9 +69,7 @@ export async function apiMain() {
 
     api.get('/rankings', async (req, res) => {
 
-        if (["osu", "mania", "taiko", "fruits"].includes(req.query.mode) == -1 || req.query.mode == undefined) {
-            req.query.mode = "osu"
-        };
+        req.query.mode = await parseMode(req.query.mode, req.query.m);
 
         if (["score", "charts", "country", "performance"].includes(req.query.type) == -1 || req.query.type == undefined) {
             req.query.type = "score"
