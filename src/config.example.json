@@ -4,7 +4,8 @@
         "secret": "your osu client secret"
     },
     "api": {
-        "port": "your api port (int)"
+        "port": "your api port (int)",
+        "logging": "logging level (tiny recommended)"
     },
     "mariadb": {
         "host": "your mariadb ip",
