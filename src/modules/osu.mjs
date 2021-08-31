@@ -3,7 +3,6 @@ import { mariadbWorker } from "./mariadb.mjs";
 import { config } from "../index.mjs";
 
 export async function osuMain() {
-
     let token;
     let entries = 0;
     let refresh = 0;
@@ -37,6 +36,15 @@ export async function osuMain() {
         fullRankingsUpdate("taiko", "score", 1);
         await mariadbWorker.runSqlCreateTable('scoreranking_fruits', '`rank` INT(11) NOT NULL, `user_id` INT NULL DEFAULT NULL, `username` VARCHAR(255) NULL DEFAULT NULL, `score` BIGINT(20) NOT NULL DEFAULT 0, PRIMARY KEY(`rank`)')
         fullRankingsUpdate("fruits", "score", 1);
+    }
+
+    if (config.settings.tryCreateTable === true) {
+        console.log("tryCreateTable is turned on, will attempt to create tables.");
+        await mariadbWorker.runSqlCreateTable('scoreranking_osu', '`rank` INT(11) NOT NULL, `user_id` INT NULL DEFAULT NULL, `username` VARCHAR(255) NULL DEFAULT NULL, `score` BIGINT(20) NOT NULL DEFAULT 0, PRIMARY KEY(`rank`)')
+        await mariadbWorker.runSqlCreateTable('scoreranking_mania', '`rank` INT(11) NOT NULL, `user_id` INT NULL DEFAULT NULL, `username` VARCHAR(255) NULL DEFAULT NULL, `score` BIGINT(20) NOT NULL DEFAULT 0, PRIMARY KEY(`rank`)')
+        await mariadbWorker.runSqlCreateTable('scoreranking_taiko', '`rank` INT(11) NOT NULL, `user_id` INT NULL DEFAULT NULL, `username` VARCHAR(255) NULL DEFAULT NULL, `score` BIGINT(20) NOT NULL DEFAULT 0, PRIMARY KEY(`rank`)')
+        await mariadbWorker.runSqlCreateTable('scoreranking_fruits', '`rank` INT(11) NOT NULL, `user_id` INT NULL DEFAULT NULL, `username` VARCHAR(255) NULL DEFAULT NULL, `score` BIGINT(20) NOT NULL DEFAULT 0, PRIMARY KEY(`rank`)')
+        await mariadbWorker.runSqlCreateTable('scores', "`score_id` BIGINT(20) NOT NULL, `user_id` INT(11) NOT NULL, `beatmap_id` INT(11) NOT NULL, `score` INT(11) NOT NULL, `count300` INT(11) NOT NULL, `count100` INT(11) NOT NULL, `count50` INT(11) NOT NULL, `countmiss` INT(11) NOT NULL, `combo` INT(11) NOT NULL, `perfect` VARCHAR(5) NOT NULL COLLATE 'utf8mb3_general_ci', `enabled_mods` INT(11) NOT NULL, `date_played` VARCHAR(19) NOT NULL COLLATE 'utf8mb3_general_ci', `rank` VARCHAR(2) NOT NULL COLLATE 'utf8mb3_general_ci', `pp` DECIMAL(11,6) NOT NULL, `replay_available` VARCHAR(5) NOT NULL COLLATE 'utf8mb3_general_ci', INDEX `user_id` (`user_id`) USING BTREE, UNIQUE INDEX `score_id` (`score_id`) USING BTREE")
     }
 
     if (config.settings.autoUpdate === true) {

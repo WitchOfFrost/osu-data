@@ -8,7 +8,8 @@ const pool = mariadb.createPool({
     user: config.mariadb.user,
     password: config.mariadb.password,
     database: config.mariadb.name,
-    connectionLimit: config.mariadb.maxConnections
+    connectionLimit: config.mariadb.maxConnections,
+    permitLocalInfile: true
 });
 
 let permanentConn;

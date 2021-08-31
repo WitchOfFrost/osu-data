@@ -1,10 +1,17 @@
+process.chdir(`${process.cwd()}/src`);
+
 import express from 'express';
+import { expressUploader } from "./expressUpload.cjs";
 import morgan from 'morgan';
 
 import { config } from '../index.mjs';
 import { mariadbWorker } from "../modules/mariadb.mjs";
 
 const api = express();
+
+function pre(api) {
+    expressUploader(api);
+} pre(api);
 
 function parseMode(mode, m) {
     let resolveMode = "";
@@ -115,4 +122,49 @@ export async function apiMain() {
         });
     });
 
+    api.post('/import', async (req, res) => {
+        let sentToken = req.headers["x-access-token"] || req.headers["authorization"];
+
+        if (config.api.postAuth == true) {
+            if (!sentToken) {
+                res.status(401);
+                res.json({ error: "Access denied. No token provided." });
+                return;
+            } else if (sentToken != config.api.token) {
+                res.status(403);
+                res.json({ error: "Invalid token." });
+                return;
+            };
+        };
+
+        if (!req.files) {
+            res.status(400);
+            res.json({ error: "No file uploaded." });
+            return;
+        } else if (!req.query.id) {
+            res.status(400);
+            res.json({ error: "Please provide a user id." });
+            return;
+        } else {
+            let file = req.files.csv;
+            let fileExt = file.name.split(".").pop();
+            let fileName = req.query.id;
+            let path = "" + process.cwd().replaceAll("\\", "/") + `/api/cache/${fileName}.${fileExt}`
+
+            if (["csv"].indexOf(fileExt) < 0) {
+                res.status(400);
+                res.json({ error: "Unsupported file-type." });
+                return;
+            };
+
+            file.mv(`./api/cache/${fileName}.${fileExt}`);
+
+            mariadbWorker.runSqlQuery(`LOAD DATA LOCAL INFILE '${path}' INTO TABLE scores FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' IGNORE 1 ROWS`).then(data => {
+                console.log("Probably successful.");
+            });
+
+            res.status(200);
+            res.json({ message: "Successfully uploaded." });
+        };
+    });
 };
