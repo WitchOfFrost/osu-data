@@ -55,7 +55,7 @@ export async function apiMain() {
             req.query.type = "score"
         };
 
-        await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE rank=? LIMIT 1`, [req.url.split("/").pop()]).then(data => {
+        await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE rank=? LIMIT 1`, [req.path.split("/").pop()]).then(data => {
             if (data[0] == undefined) {
                 res.status(200);
                 res.json([{ rank: null, user_id: 0, username: null, score: null }])
@@ -64,7 +64,7 @@ export async function apiMain() {
                 res.json([data[0]]);
             }
         });
-    })
+    });
 
     api.get('/u/*', async (req, res) => {
 
@@ -74,7 +74,11 @@ export async function apiMain() {
             req.query.type = "score"
         };
 
-        await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE user_id=? LIMIT 1`, [req.url.split("/").pop()]).then(data => {
+        if (["username", "user_id"].includes(req.query.s) == -1 || req.query.s == undefined) {
+            req.query.s = "user_id"
+        };
+
+        await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM ${req.query.type}ranking_${req.query.mode} WHERE ${req.query.s}=? LIMIT 1`, [req.path.split("/").pop()]).then(data => {
             if (data[0] == undefined) {
                 res.status(200);
                 res.json([{ rank: null, user_id: 0, username: null, score: null }])
