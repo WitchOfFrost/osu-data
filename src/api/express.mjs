@@ -4,7 +4,8 @@ import express from 'express';
 import { expressUploader } from "./expressUpload.cjs";
 import morgan from 'morgan';
 
-import { config } from '../index.mjs';
+import { config } from '../workarounds/selfReloadJson.cjs';
+import { validateScores } from '../modules/osu.mjs';
 import { mariadbWorker } from "../modules/mariadb.mjs";
 
 const api = express();
@@ -128,46 +129,49 @@ export async function apiMain() {
     });
 
     api.post('/import', async (req, res) => {
-        let sentToken = req.headers["x-access-token"] || req.headers["authorization"];
 
-        if (config.api.postAuth == true) {
-            if (!sentToken) {
-                res.status(401);
-                res.json({ error: "Access denied. No token provided." });
-                return;
-            } else if (sentToken != config.api.token) {
-                res.status(403);
-                res.json({ error: "Invalid token." });
-                return;
+        if (config.api.importEnabled == true) {
+            let sentToken = req.headers["x-access-token"] || req.headers["authorization"];
+
+            if (config.api.postAuth == true) {
+                if (!sentToken) {
+                    res.status(401);
+                    res.json({ error: "Access denied. No token provided." });
+                    return;
+                } else if (sentToken != config.api.token) {
+                    res.status(403);
+                    res.json({ error: "Invalid token." });
+                    return;
+                };
             };
-        };
 
-        if (!req.files) {
-            res.status(400);
-            res.json({ error: "No file uploaded." });
-            return;
-        } else if (!req.query.id) {
-            res.status(400);
-            res.json({ error: "Please provide a user id." });
-            return;
-        } else {
-            let file = req.files.csv;
-            let fileExt = file.name.split(".").pop();
-            let fileName = req.query.id;
-            let path = "" + process.cwd().replaceAll("\\", "/") + `/api/cache/${fileName}.${fileExt}`
-
-            if (["csv"].indexOf(fileExt) < 0) {
+            if (!req.files) {
                 res.status(400);
-                res.json({ error: "Unsupported file-type." });
+                res.json({ error: "No file uploaded." });
                 return;
-            };
+            } else {
+                let file = req.files.csv;
+                let fileExt = file.name.split(".").pop();
+                let fileName = "file_" + Math.floor(Math.random() * 10000);
+                let path = "" + process.cwd().replaceAll("\\", "/") + `/api/cache/${fileName}.${fileExt}`
 
-            file.mv(`./api/cache/${fileName}.${fileExt}`);
+                if (["csv"].indexOf(fileExt) < 0) {
+                    res.status(400);
+                    res.json({ error: "Unsupported file-type." });
+                    return;
+                };
 
-            mariadbWorker.runSqlQuery(`LOAD DATA LOCAL INFILE '${path}' INTO TABLE scores FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' IGNORE 1 ROWS`).then(data => {
+                await file.mv(`./api/cache/${fileName}.${fileExt}`);
+
+                let queueLength = await validateScores(path);
                 res.status(200);
-                res.json({ message: "Successfully uploaded.", data: data });
-            });
-        };
+                res.json({
+                    message: "Successfully uploaded.", queueLength: queueLength, eta: `~${Math.round(queueLength / 60)} Minutes `
+                });
+            };
+        } else {
+            res.status(423);
+            res.json({ error: "Import is currently disabled." });
+        }
     });
 };

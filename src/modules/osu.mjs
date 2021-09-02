@@ -1,6 +1,9 @@
 import axios from "axios";
 import { mariadbWorker } from "./mariadb.mjs";
+import { readFile } from "./file.mjs";
 import { config } from "../index.mjs";
+
+let queue = []
 
 export async function osuMain() {
     let token;
@@ -17,6 +20,14 @@ export async function osuMain() {
             score: 0
         }
     };
+
+    setInterval(importQueueLengthConsoleLog, 1000 * 60);
+
+    function importQueueLengthConsoleLog() {
+        console.log("Current Import Queue Length: " + queue.length);
+    }
+
+    setInterval(processQueue, 1000);
 
     function sleep(milliseconds) {
         const date = Date.now();
@@ -161,4 +172,90 @@ export async function osuMain() {
         });
     }
 
+    async function calcModEnum(mods) {
+        return new Promise(async (resolve) => {
+            let calc = 0;
+            mods.forEach(mod => {
+                switch (mod) {
+                    case "NF":
+                        calc = calc + 1
+                        break;
+                    case "EZ":
+                        calc = calc + 2
+                        break;
+                    case "HD":
+                        calc = calc + 8
+                        break;
+                    case "HR":
+                        calc = calc + 16
+                        break;
+                    case "DT":
+                        calc = calc + 64
+                        break;
+                    case "HT":
+                        calc = calc + 256
+                        break;
+                    case "NC":
+                        calc = calc + 576
+                        break;
+                    case "FL":
+                        calc = calc + 1024
+                        break;
+                    case "SO":
+                        calc = calc + 4096
+                        break;
+                    case "SD":
+                        calc = calc + 32
+                        break;
+                    case "PF":
+                        calc = calc + 16416
+                        break;
+                };
+            });
+            resolve(calc);
+        });
+    };
+
+    async function processQueue() {
+        if (queue.length > 0) {
+            let score = queue[0];
+            queue.shift();
+
+            if (Date.now() > refresh - 5 * 60 * 1000) {
+                token = await refreshToken();
+            }
+
+            let osuAPI = axios.create({ baseURL: 'https://osu.ppy.sh/api/v2', headers: { 'Authorization': token }, json: true });
+
+            osuAPI.get('/scores/osu/' + score.score_id).then(async res => {
+                let apiFormatted = { "score_id": String(res.data.id), "user_id": String(res.data.user_id), "beatmap_id": String(res.data.beatmap.id), "score": String(res.data.score), "count300": String(res.data.statistics.count_300), "count100": String(res.data.statistics.count_100), "count50": String(res.data.statistics.count_50), "countmiss": String(res.data.statistics.count_miss), "combo": String(res.data.max_combo), "perfect": String(Number(res.data.perfect)), "enabled_mods": String(await calcModEnum(res.data.mods)), "date_played": String(res.data.created_at.slice(0, 19).split("T").join(" ")), "rank": String(res.data.rank), "pp": String(res.data.pp), "replay_available": String(Number(res.data.replay)) }
+                if (JSON.stringify(score) == JSON.stringify(apiFormatted)) {
+                    await mariadbWorker.runSqlQueryPermanentConnection(`INSERT INTO scores (score_id, user_id, beatmap_id, score, count300, count100, count50, countmiss, combo, perfect, enabled_mods, date_played, rank, pp, replay_available) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT 1`, [score.score_id, score.user_id, score.beatmap_id, score.score, score.count300, score.count100, score.count50, score.countmiss, score.combo, score.perfect, score.enabled_mods, score.date_played, score.rank, score.pp, score.replay_available]).then(data => {
+                        console.log(data);
+                    });
+                };
+            }).catch(err => {
+                if (err.response.status == 404) return;
+
+                console.log(err);
+            });
+        }
+    }
+
+}
+
+export async function validateScores(path) {
+    return new Promise(async (resolve) => {
+
+        let parsedCSV = await readFile.parseCSV(path);
+
+        parsedCSV.forEach(async score => {
+            await mariadbWorker.runSqlQueryPermanentConnection(`SELECT * FROM scores WHERE score_id=? LIMIT 1`, [score.score_id]).then(data => {
+                if (data[0] == undefined) {
+                    queue.push(score);
+                }
+            });
+        });
+        resolve(queue.length);
+    });
 }
