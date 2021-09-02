@@ -5,7 +5,7 @@ import { expressUploader } from "./expressUpload.cjs";
 import morgan from 'morgan';
 
 import { config } from '../workarounds/selfReloadJson.cjs';
-import { validateScores } from '../modules/osu.mjs';
+import { validateScores, queue } from '../modules/osu.mjs';
 import { mariadbWorker } from "../modules/mariadb.mjs";
 
 const api = express();
@@ -129,8 +129,13 @@ export async function apiMain() {
     });
 
     api.post('/import', async (req, res) => {
-
-        if (config.api.importEnabled == true) {
+        if (config.api.importEnabled == false) {
+            res.status(423);
+            res.json({ error: "Import is currently disabled." });
+        } else if (queue.length > config.api.importQueueLimit) {
+            res.status(423);
+            res.json({ error: "Import queue exceeds the limit. Import is temporarily disabled." });
+        } else {
             let sentToken = req.headers["x-access-token"] || req.headers["authorization"];
 
             if (config.api.postAuth == true) {
@@ -169,9 +174,6 @@ export async function apiMain() {
                     message: "Successfully uploaded.", queueLength: queueLength, eta: `~${Math.round(queueLength / 60)} Minutes `
                 });
             };
-        } else {
-            res.status(423);
-            res.json({ error: "Import is currently disabled." });
         }
     });
 };

@@ -3,7 +3,7 @@ import { mariadbWorker } from "./mariadb.mjs";
 import { readFile } from "./file.mjs";
 import { config } from "../index.mjs";
 
-let queue = []
+export let queue = []
 
 export async function osuMain() {
     let token;
